@@ -1,5 +1,8 @@
 package com.darshanraog.urlshortener.service;
 
+import com.darshanraog.urlshortener.dto.UrlMappingDTO;
+import com.darshanraog.urlshortener.entity.UrlMapping;
+
 import java.time.LocalDateTime;
 
 public interface IUrlShortenerService {
@@ -18,10 +21,15 @@ public interface IUrlShortenerService {
      * @param shortCode the shortcode received.
      * @return the original URL.
      */
-    String getOriginalUrl(String shortCode);
+    UrlMapping getOriginalUrlMapping(String shortCode);
 
-    //TODO: Might add this functionality
-    void incrementClickCount();
+    /**
+     * Returns statistics for the shortened URL.
+     *
+     * @param shortCode given shortcode.
+     * @return the DTO containing analytics.
+     */
+    UrlMappingDTO getStats(String shortCode);
 
     //TODO: Might add this functionality
     LocalDateTime checkExpiryDate();
