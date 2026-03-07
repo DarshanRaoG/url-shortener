@@ -1,25 +1,23 @@
 package com.darshanraog.urlshortener.service;
 
+import com.darshanraog.urlshortener.config.UrlShortenerProperties;
 import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
 import com.darshanraog.urlshortener.util.Base62Encoder;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Service
+@AllArgsConstructor
 public class UrlShortenerService implements IUrlShortenerService {
 
-    @Value("${url.shortener.secret}")
-    private long secretKey;
-
+    private final UrlShortenerProperties urlShortenerProperties;
     private final UrlMappingRepository urlMappingRepository;
-
-    public UrlShortenerService(UrlMappingRepository urlMappingRepository) {
-        this.urlMappingRepository = urlMappingRepository;
-    }
+    private static final long PRIME = 2654435761L;
 
     /**
      * Creates a shortened URL for the given URL, saves it in DB and then returns it.
@@ -28,24 +26,26 @@ public class UrlShortenerService implements IUrlShortenerService {
      * @return the shortened URL.
      */
     @Override
+    @Transactional
     public String createShortUrl(String originalUrl) {
-        if (Objects.isNull(originalUrl) || originalUrl.isEmpty()) {
+        if (Objects.isNull(originalUrl) || originalUrl.isBlank()) {
             throw new RuntimeException("Empty url object received!!!");
         }
 
         UrlMapping urlMapping = new UrlMapping();
         urlMapping.setOriginalUrl(originalUrl);
         urlMapping.setCreatedAt(LocalDateTime.now());
+
         urlMapping = urlMappingRepository.save(urlMapping);
 
-        // Scramble the id using XOR for security
-        long scrambledId = urlMapping.getUrlId() ^ secretKey;
+        // Scramble the id using XOR for security (Multiply with prime for a more even scrambling)
+        long scrambledId = (urlMapping.getUrlId() * PRIME) ^ urlShortenerProperties.getSecret();
         String shortCode = Base62Encoder.encode(scrambledId);
+
+        // Updates in db automatically as it is transactional
         urlMapping.setShortCode(shortCode);
 
-        urlMappingRepository.save(urlMapping);
-
-        return shortCode;
+        return urlShortenerProperties.getBaseUrl() + "/" + shortCode;
     }
 
     /**

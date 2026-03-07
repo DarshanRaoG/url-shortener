@@ -10,12 +10,15 @@ public class Base62Encoder {
                     .toCharArray();
 
     public static String encode(long id) {
+        if(id == 0) {
+            return "0";
+        }
         StringBuilder base62Url = new StringBuilder();
         while (id > 0) {
             int remainder = (int) (id % 62);
             base62Url.append(base62Digits[remainder]);
             id = id / 62;
         }
-        return base62Url.toString();
+        return base62Url.reverse().toString();
     }
 }
