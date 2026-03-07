@@ -1,6 +1,7 @@
 package com.darshanraog.urlshortener.controller;
 
 
+import com.darshanraog.urlshortener.dto.UrlMappingDTO;
 import com.darshanraog.urlshortener.service.IUrlShortenerService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,5 +35,13 @@ public class UrlShortenerController {
                 .getOriginalUrlMapping(shortCode)
                 .getOriginalUrl();
         return ResponseEntity.status(302).location(URI.create(originalUrl)).build();
+    }
+
+    @GetMapping("/stats/{shortCode}")
+    ResponseEntity<UrlMappingDTO> getAnalyticsForShortCode(@PathVariable String shortCode) {
+        if (Objects.isNull(shortCode)) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(urlShortenerService.getStats(shortCode));
     }
 }

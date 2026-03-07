@@ -1,6 +1,7 @@
 package com.darshanraog.urlshortener.service;
 
 import com.darshanraog.urlshortener.config.UrlShortenerProperties;
+import com.darshanraog.urlshortener.dto.UrlMappingDTO;
 import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
 import com.darshanraog.urlshortener.util.Base62Encoder;
@@ -69,9 +70,25 @@ public class UrlShortenerService implements IUrlShortenerService {
         return existingUrlMapping;
     }
 
+    /**
+     * Returns statistics for the shortened URL.
+     *
+     * @param shortCode given shortcode.
+     * @return the DTO containing analytics.
+     */
     @Override
-    public void incrementClickCount() {
-
+    public UrlMappingDTO getStats(String shortCode) {
+        if (Objects.isNull(shortCode) || shortCode.isEmpty()) {
+            throw new RuntimeException("Empty url object received!");
+        }
+        UrlMapping urlMapping = urlMappingRepository.findByShortCode(shortCode);
+        return UrlMappingDTO.builder()
+                .clickCount(urlMapping.getClickCount())
+                .createdAt(urlMapping.getCreatedAt())
+                .expiresAt(urlMapping.getExpiresAt())
+                .originalUrl(urlMapping.getOriginalUrl())
+                .shortCode(urlMapping.getShortCode())
+                .build();
     }
 
     @Override
