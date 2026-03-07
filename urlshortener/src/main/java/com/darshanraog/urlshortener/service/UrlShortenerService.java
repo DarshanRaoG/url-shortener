@@ -3,6 +3,7 @@ package com.darshanraog.urlshortener.service;
 import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
 import com.darshanraog.urlshortener.util.Base62Encoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -10,6 +11,9 @@ import java.util.Objects;
 
 @Service
 public class UrlShortenerService implements IUrlShortenerService {
+
+    @Value("${url.shortener.secret}")
+    private long secretKey;
 
     private final UrlMappingRepository urlMappingRepository;
 
@@ -34,8 +38,11 @@ public class UrlShortenerService implements IUrlShortenerService {
         urlMapping.setCreatedAt(LocalDateTime.now());
         urlMapping = urlMappingRepository.save(urlMapping);
 
-        String shortCode = Base62Encoder.encode(urlMapping.getUrlId());
+        // Scramble the id using XOR for security
+        long scrambledId = urlMapping.getUrlId() ^ secretKey;
+        String shortCode = Base62Encoder.encode(scrambledId);
         urlMapping.setShortCode(shortCode);
+
         urlMappingRepository.save(urlMapping);
 
         return shortCode;

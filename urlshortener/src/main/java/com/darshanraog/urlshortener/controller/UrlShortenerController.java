@@ -2,6 +2,7 @@ package com.darshanraog.urlshortener.controller;
 
 
 import com.darshanraog.urlshortener.service.IUrlShortenerService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +14,9 @@ import java.util.Objects;
 public class UrlShortenerController {
 
     private final IUrlShortenerService urlShortenerService;
-    private final String basePath = "http://localhost:8080/";
+
+    @Value("${url.shortener.base-url}")
+    private String basePath;
 
     public UrlShortenerController(IUrlShortenerService urlShortenerService) {
         this.urlShortenerService = urlShortenerService;
@@ -25,7 +28,7 @@ public class UrlShortenerController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         String shortCode = urlShortenerService.createShortUrl(url);
-        return new ResponseEntity<>(basePath + shortCode, HttpStatus.OK);
+        return new ResponseEntity<>(basePath + "/" + shortCode, HttpStatus.OK);
     }
 
     @GetMapping("/{shortCode}")
