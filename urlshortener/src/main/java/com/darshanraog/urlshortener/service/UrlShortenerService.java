@@ -53,16 +53,18 @@ public class UrlShortenerService implements IUrlShortenerService {
      * @return the original URL.
      */
     @Override
-    public String getOriginalUrl(String shortCode) {
+    public UrlMapping getOriginalUrlMapping(String shortCode) {
         if (Objects.isNull(shortCode) || shortCode.isEmpty()) {
             throw new RuntimeException("Empty url object received!");
         }
 
-        UrlMapping existingUrl = urlMappingRepository.findByShortCode(shortCode);
-        if (Objects.isNull(existingUrl)) {
+        UrlMapping existingUrlMapping = urlMappingRepository.findByShortCode(shortCode);
+        if (Objects.isNull(existingUrlMapping)) {
             throw new RuntimeException("Url doesn't exist!");
         }
-        return existingUrl.getOriginalUrl();
+        existingUrlMapping.setClickCount(existingUrlMapping.getClickCount() + 1);
+        urlMappingRepository.save(existingUrlMapping);
+        return existingUrlMapping;
     }
 
     @Override

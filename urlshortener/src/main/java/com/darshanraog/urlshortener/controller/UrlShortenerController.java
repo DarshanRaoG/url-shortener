@@ -33,7 +33,9 @@ public class UrlShortenerController {
         if (Objects.isNull(shortCode)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        String originalUrl = urlShortenerService.getOriginalUrl(shortCode);
+        String originalUrl = urlShortenerService
+                .getOriginalUrlMapping(shortCode)
+                .getOriginalUrl();
         return ResponseEntity.status(302).location(URI.create(originalUrl)).build();
     }
 }
