@@ -1,24 +1,24 @@
 package com.darshanraog.urlshortener.service;
 
+import com.darshanraog.urlshortener.config.UrlShortenerProperties;
+import com.darshanraog.urlshortener.dto.UrlMappingDTO;
 import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
+import com.darshanraog.urlshortener.util.Base62Encoder;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Service
+@AllArgsConstructor
 public class UrlShortenerService implements IUrlShortenerService {
 
+    private final UrlShortenerProperties urlShortenerProperties;
     private final UrlMappingRepository urlMappingRepository;
-
-    private static final char[] alphanumerics =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-                    .toCharArray();
-
-    public UrlShortenerService(UrlMappingRepository urlMappingRepository) {
-        this.urlMappingRepository = urlMappingRepository;
-    }
+    private static final long PRIME = 2654435761L;
 
     /**
      * Creates a shortened URL for the given URL, saves it in DB and then returns it.
@@ -27,23 +27,26 @@ public class UrlShortenerService implements IUrlShortenerService {
      * @return the shortened URL.
      */
     @Override
+    @Transactional
     public String createShortUrl(String originalUrl) {
-        if (Objects.isNull(originalUrl) || originalUrl.isEmpty()) {
+        if (Objects.isNull(originalUrl) || originalUrl.isBlank()) {
             throw new RuntimeException("Empty url object received!!!");
         }
 
-        String shortCode = "";
-        do {
-            shortCode = generateShortCode();
-        } while (urlMappingRepository.findByShortCode(shortCode) != null);
-
         UrlMapping urlMapping = new UrlMapping();
         urlMapping.setOriginalUrl(originalUrl);
-        urlMapping.setShortCode(shortCode);
         urlMapping.setCreatedAt(LocalDateTime.now());
-        urlMappingRepository.save(urlMapping);
 
-        return shortCode;
+        urlMapping = urlMappingRepository.save(urlMapping);
+
+        // Scramble the id using XOR for security (Multiply with prime for a more even scrambling)
+        long scrambledId = (urlMapping.getUrlId() * PRIME) ^ urlShortenerProperties.getSecret();
+        String shortCode = Base62Encoder.encode(scrambledId);
+
+        // Updates in db automatically as it is transactional
+        urlMapping.setShortCode(shortCode);
+
+        return urlShortenerProperties.getBaseUrl() + "/" + shortCode;
     }
 
     /**
@@ -53,21 +56,39 @@ public class UrlShortenerService implements IUrlShortenerService {
      * @return the original URL.
      */
     @Override
-    public String getOriginalUrl(String shortCode) {
+    public UrlMapping getOriginalUrlMapping(String shortCode) {
         if (Objects.isNull(shortCode) || shortCode.isEmpty()) {
             throw new RuntimeException("Empty url object received!");
         }
 
-        UrlMapping existingUrl = urlMappingRepository.findByShortCode(shortCode);
-        if (Objects.isNull(existingUrl)) {
+        UrlMapping existingUrlMapping = urlMappingRepository.findByShortCode(shortCode);
+        if (Objects.isNull(existingUrlMapping)) {
             throw new RuntimeException("Url doesn't exist!");
         }
-        return existingUrl.getOriginalUrl();
+        existingUrlMapping.setClickCount(existingUrlMapping.getClickCount() + 1);
+        urlMappingRepository.save(existingUrlMapping);
+        return existingUrlMapping;
     }
 
+    /**
+     * Returns statistics for the shortened URL.
+     *
+     * @param shortCode given shortcode.
+     * @return the DTO containing analytics.
+     */
     @Override
-    public void incrementClickCount() {
-
+    public UrlMappingDTO getStats(String shortCode) {
+        if (Objects.isNull(shortCode) || shortCode.isEmpty()) {
+            throw new RuntimeException("Empty url object received!");
+        }
+        UrlMapping urlMapping = urlMappingRepository.findByShortCode(shortCode);
+        return UrlMappingDTO.builder()
+                .clickCount(urlMapping.getClickCount())
+                .createdAt(urlMapping.getCreatedAt())
+                .expiresAt(urlMapping.getExpiresAt())
+                .originalUrl(urlMapping.getOriginalUrl())
+                .shortCode(urlMapping.getShortCode())
+                .build();
     }
 
     @Override
@@ -75,17 +96,4 @@ public class UrlShortenerService implements IUrlShortenerService {
         return null;
     }
 
-    /**
-     * Generates unique and random 7 character code.
-     *
-     * @return the generated code.
-     */
-    private String generateShortCode() {
-        StringBuilder code = new StringBuilder();
-        for (int i = 0; i < 7; i++) {
-            int randomIdx = (int) (Math.random() * 62);
-            code.append(alphanumerics[randomIdx]);
-        }
-        return code.toString();
-    }
 }
