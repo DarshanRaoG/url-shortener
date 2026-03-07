@@ -26,3 +26,5 @@ replay_pid*
 # ide files
 .idea/
 *.iml
+
+.env
