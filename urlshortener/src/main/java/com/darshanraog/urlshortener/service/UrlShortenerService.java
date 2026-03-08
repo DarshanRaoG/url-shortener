@@ -36,6 +36,7 @@ public class UrlShortenerService implements IUrlShortenerService {
         UrlMapping urlMapping = new UrlMapping();
         urlMapping.setOriginalUrl(originalUrl);
         urlMapping.setCreatedAt(LocalDateTime.now());
+        urlMapping.setExpiresAt(LocalDateTime.now().plusDays(urlShortenerProperties.getDefaultExpiryDays()));
 
         urlMapping = urlMappingRepository.save(urlMapping);
 
