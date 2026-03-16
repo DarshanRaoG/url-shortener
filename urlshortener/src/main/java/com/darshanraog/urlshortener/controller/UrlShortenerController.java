@@ -35,7 +35,7 @@ public class UrlShortenerController {
         }
         UrlMapping urlMapping = urlShortenerService
                 .getOriginalUrlMapping(shortCode);
-        if (urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (Objects.isNull(urlMapping.getExpiresAt()) || urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
             return ResponseEntity.status(HttpStatus.GONE).build();
         }
         String originalUrl = urlMapping
