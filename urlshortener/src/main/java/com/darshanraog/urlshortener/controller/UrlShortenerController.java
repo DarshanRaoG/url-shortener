@@ -2,6 +2,7 @@ package com.darshanraog.urlshortener.controller;
 
 
 import com.darshanraog.urlshortener.dto.UrlMappingDTO;
+import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.service.IUrlShortenerService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @AllArgsConstructor
@@ -31,8 +33,12 @@ public class UrlShortenerController {
         if (Objects.isNull(shortCode)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        String originalUrl = urlShortenerService
-                .getOriginalUrlMapping(shortCode)
+        UrlMapping urlMapping = urlShortenerService
+                .getOriginalUrlMapping(shortCode);
+        if (Objects.isNull(urlMapping.getExpiresAt()) || urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.status(HttpStatus.GONE).build();
+        }
+        String originalUrl = urlMapping
                 .getOriginalUrl();
         return ResponseEntity.status(302).location(URI.create(originalUrl)).build();
     }
