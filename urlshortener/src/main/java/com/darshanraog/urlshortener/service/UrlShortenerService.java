@@ -22,6 +22,7 @@ public class UrlShortenerService implements IUrlShortenerService {
     private final UrlMappingRepository urlMappingRepository;
     private final StringRedisTemplate redisTemplate;
     private static final long PRIME = 2654435761L;
+    private static final String CLICKS_KEY = "clicks:";
 
     /**
      * Creates a shortened URL for the given URL, saves it in DB and then returns it.
@@ -65,28 +66,28 @@ public class UrlShortenerService implements IUrlShortenerService {
             throw new RuntimeException("Empty url object received!");
         }
 
+        UrlMapping urlMapping = new UrlMapping();
+
         // Check if there is a cached URL in Redis
         String cachedUrl = redisTemplate.opsForValue().get(shortCode);
 
         if (Objects.nonNull(cachedUrl)) {
             System.out.println("Got it through redis! " + cachedUrl);
-            UrlMapping urlMapping = new UrlMapping();
             urlMapping.setOriginalUrl(cachedUrl);
-            return urlMapping;
+        } else {
+            // Fall back to DB call
+            UrlMapping existingUrlMapping = urlMappingRepository.findByShortCode(shortCode);
+            if (Objects.isNull(existingUrlMapping)) {
+                throw new RuntimeException("Url doesn't exist!");
+            }
+            // Store shortCode in Redis for cache
+            redisTemplate.opsForValue().set(shortCode, existingUrlMapping.getOriginalUrl(), Duration.ofHours(24));
         }
 
-        // Fall back to DB call
-        UrlMapping existingUrlMapping = urlMappingRepository.findByShortCode(shortCode);
-        if (Objects.isNull(existingUrlMapping)) {
-            throw new RuntimeException("Url doesn't exist!");
-        }
-        existingUrlMapping.setClickCount(existingUrlMapping.getClickCount() + 1);
-        urlMappingRepository.save(existingUrlMapping);
+        // Cache Aside -> Increment click count in redis (Will be synced later)
+        redisTemplate.opsForValue().increment(CLICKS_KEY + shortCode);
 
-        // Store in Redis for cache (up to 24 hours)
-        redisTemplate.opsForValue().set(shortCode, existingUrlMapping.getOriginalUrl(), Duration.ofHours(24));
-
-        return existingUrlMapping;
+        return urlMapping;
     }
 
     /**

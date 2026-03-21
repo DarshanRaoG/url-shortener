@@ -4,6 +4,7 @@ import com.darshanraog.urlshortener.entity.UrlMapping;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -25,4 +26,8 @@ public interface UrlMappingRepository extends JpaRepository<UrlMapping, Long> {
     @Modifying
     @Query(value = "DELETE FROM url_mapping WHERE expires_at < NOW()", nativeQuery = true)
     void deleteExpiredUrls();
+
+    @Modifying
+    @Query(value = "UPDATE url_mapping u SET u.click_count = u.click_count + :count WHERE u.short_code = :shortCode", nativeQuery = true)
+    void incrementCountBy(@Param("shortCode") String shortCode, @Param("count") long count);
 }
