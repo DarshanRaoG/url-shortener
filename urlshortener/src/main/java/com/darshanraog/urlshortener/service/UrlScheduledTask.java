@@ -45,17 +45,14 @@ public class UrlScheduledTask {
         }
 
         for (String key : keys) {
-            String countStr = redisTemplate.opsForValue().get(key);
-            if (Objects.isNull(countStr)) {
+            String countStr = redisTemplate.opsForValue().getAndSet(key, "0");
+            if (Objects.isNull(countStr) || countStr.equals("0")) {
                 continue;
             }
             long count = Long.parseLong(countStr);
             String shortCode = key.substring(7); // removing "clicks:"
 
             urlMappingRepository.incrementCountBy(shortCode, count);
-
-            redisTemplate.delete(key);
-
         }
 
         System.out.println("== Sync up done! ==");
