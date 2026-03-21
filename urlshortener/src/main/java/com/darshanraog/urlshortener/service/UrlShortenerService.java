@@ -6,9 +6,11 @@ import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
 import com.darshanraog.urlshortener.util.Base62Encoder;
 import lombok.AllArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -18,6 +20,7 @@ public class UrlShortenerService implements IUrlShortenerService {
 
     private final UrlShortenerProperties urlShortenerProperties;
     private final UrlMappingRepository urlMappingRepository;
+    private final StringRedisTemplate redisTemplate;
     private static final long PRIME = 2654435761L;
 
     /**
@@ -62,12 +65,27 @@ public class UrlShortenerService implements IUrlShortenerService {
             throw new RuntimeException("Empty url object received!");
         }
 
+        // Check if there is a cached URL in Redis
+        String cachedUrl = redisTemplate.opsForValue().get(shortCode);
+
+        if (Objects.nonNull(cachedUrl)) {
+            System.out.println("Got it through redis! " + cachedUrl);
+            UrlMapping urlMapping = new UrlMapping();
+            urlMapping.setOriginalUrl(cachedUrl);
+            return urlMapping;
+        }
+
+        // Fall back to DB call
         UrlMapping existingUrlMapping = urlMappingRepository.findByShortCode(shortCode);
         if (Objects.isNull(existingUrlMapping)) {
             throw new RuntimeException("Url doesn't exist!");
         }
         existingUrlMapping.setClickCount(existingUrlMapping.getClickCount() + 1);
         urlMappingRepository.save(existingUrlMapping);
+
+        // Store in Redis for cache (up to 24 hours)
+        redisTemplate.opsForValue().set(shortCode, existingUrlMapping.getOriginalUrl(), Duration.ofHours(24));
+
         return existingUrlMapping;
     }
 
