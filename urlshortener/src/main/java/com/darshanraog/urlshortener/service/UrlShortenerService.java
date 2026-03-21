@@ -5,10 +5,13 @@ import com.darshanraog.urlshortener.dto.UrlMappingDTO;
 import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
 import com.darshanraog.urlshortener.util.Base62Encoder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -18,7 +21,9 @@ public class UrlShortenerService implements IUrlShortenerService {
 
     private final UrlShortenerProperties urlShortenerProperties;
     private final UrlMappingRepository urlMappingRepository;
+    private final StringRedisTemplate redisTemplate;
     private static final long PRIME = 2654435761L;
+    private static final String CLICKS_KEY = "clicks:";
 
     /**
      * Creates a shortened URL for the given URL, saves it in DB and then returns it.
@@ -62,13 +67,52 @@ public class UrlShortenerService implements IUrlShortenerService {
             throw new RuntimeException("Empty url object received!");
         }
 
-        UrlMapping existingUrlMapping = urlMappingRepository.findByShortCode(shortCode);
-        if (Objects.isNull(existingUrlMapping)) {
-            throw new RuntimeException("Url doesn't exist!");
+        UrlMapping urlMapping;
+        ObjectMapper objectMapper = new ObjectMapper();
+        // Check if there is a cached URL in Redis
+        String cachedJson = redisTemplate.opsForValue().get(shortCode);
+
+        if (Objects.nonNull(cachedJson)) {
+            System.out.println("Got it through redis! " + cachedJson);
+            try {
+                urlMapping = objectMapper.readValue(cachedJson, UrlMapping.class);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to parse cached data!", e);
+            }
+        } else {
+            // Fall back to DB call
+            urlMapping = urlMappingRepository.findByShortCode(shortCode);
+            if (Objects.isNull(urlMapping)) {
+                throw new RuntimeException("Url doesn't exist!");
+            }
+
+            try {
+                String json = objectMapper.writeValueAsString(urlMapping);
+
+                // Store shortCode in Redis for cache
+                redisTemplate.opsForValue().set(
+                        shortCode,
+                        json,
+                        Duration.ofHours(24)
+                );
+            } catch (Exception e) {
+                System.out.println("WARNING: Failed to cache data " + e);
+            }
         }
-        existingUrlMapping.setClickCount(existingUrlMapping.getClickCount() + 1);
-        urlMappingRepository.save(existingUrlMapping);
-        return existingUrlMapping;
+
+        if (urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("URL expired!");
+        }
+
+        // Cache Aside -> Increment click count in redis (Will be synced later)
+        try {
+            redisTemplate.opsForValue().increment(CLICKS_KEY + shortCode);
+        } catch (Exception e) {
+            System.out.println("WARNING: Redis increment failed (" + e.getMessage() + ")");
+            System.out.println("Continuing anyway...");
+        }
+
+        return urlMapping;
     }
 
     /**
@@ -83,8 +127,17 @@ public class UrlShortenerService implements IUrlShortenerService {
             throw new RuntimeException("Empty url object received!");
         }
         UrlMapping urlMapping = urlMappingRepository.findByShortCode(shortCode);
+        if (urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("URL expired!");
+        }
+        String redisCount = redisTemplate.opsForValue().get("clicks:" + shortCode);
+
+        long latestCount = urlMapping.getClickCount();
+        if (redisCount != null) {
+            latestCount += Long.parseLong(redisCount);
+        }
         return UrlMappingDTO.builder()
-                .clickCount(urlMapping.getClickCount())
+                .clickCount(latestCount)
                 .createdAt(urlMapping.getCreatedAt())
                 .expiresAt(urlMapping.getExpiresAt())
                 .originalUrl(urlMapping.getOriginalUrl())
