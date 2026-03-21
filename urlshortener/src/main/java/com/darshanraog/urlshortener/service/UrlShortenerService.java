@@ -5,6 +5,7 @@ import com.darshanraog.urlshortener.dto.UrlMappingDTO;
 import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
 import com.darshanraog.urlshortener.util.Base62Encoder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -66,26 +67,50 @@ public class UrlShortenerService implements IUrlShortenerService {
             throw new RuntimeException("Empty url object received!");
         }
 
-        UrlMapping urlMapping = new UrlMapping();
-
+        UrlMapping urlMapping;
+        ObjectMapper objectMapper = new ObjectMapper();
         // Check if there is a cached URL in Redis
-        String cachedUrl = redisTemplate.opsForValue().get(shortCode);
+        String cachedJson = redisTemplate.opsForValue().get(shortCode);
 
-        if (Objects.nonNull(cachedUrl)) {
-            System.out.println("Got it through redis! " + cachedUrl);
-            urlMapping.setOriginalUrl(cachedUrl);
+        if (Objects.nonNull(cachedJson)) {
+            System.out.println("Got it through redis! " + cachedJson);
+            try {
+                urlMapping = objectMapper.readValue(cachedJson, UrlMapping.class);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to parse cached data!", e);
+            }
         } else {
             // Fall back to DB call
-            UrlMapping existingUrlMapping = urlMappingRepository.findByShortCode(shortCode);
-            if (Objects.isNull(existingUrlMapping)) {
+            urlMapping = urlMappingRepository.findByShortCode(shortCode);
+            if (Objects.isNull(urlMapping)) {
                 throw new RuntimeException("Url doesn't exist!");
             }
-            // Store shortCode in Redis for cache
-            redisTemplate.opsForValue().set(shortCode, existingUrlMapping.getOriginalUrl(), Duration.ofHours(24));
+
+            try {
+                String json = objectMapper.writeValueAsString(urlMapping);
+
+                // Store shortCode in Redis for cache
+                redisTemplate.opsForValue().set(
+                        shortCode,
+                        json,
+                        Duration.ofHours(24)
+                );
+            } catch (Exception e) {
+                System.out.println("WARNING: Failed to cache data " + e);
+            }
+        }
+
+        if (urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("URL expired!");
         }
 
         // Cache Aside -> Increment click count in redis (Will be synced later)
-        redisTemplate.opsForValue().increment(CLICKS_KEY + shortCode);
+        try {
+            redisTemplate.opsForValue().increment(CLICKS_KEY + shortCode);
+        } catch (Exception e) {
+            System.out.println("WARNING: Redis increment failed (" + e.getMessage() + ")");
+            System.out.println("Continuing anyway...");
+        }
 
         return urlMapping;
     }
@@ -102,8 +127,17 @@ public class UrlShortenerService implements IUrlShortenerService {
             throw new RuntimeException("Empty url object received!");
         }
         UrlMapping urlMapping = urlMappingRepository.findByShortCode(shortCode);
+        if (urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("URL expired!");
+        }
+        String redisCount = redisTemplate.opsForValue().get("clicks:" + shortCode);
+
+        long latestCount = urlMapping.getClickCount();
+        if (redisCount != null) {
+            latestCount += Long.parseLong(redisCount);
+        }
         return UrlMappingDTO.builder()
-                .clickCount(urlMapping.getClickCount())
+                .clickCount(latestCount)
                 .createdAt(urlMapping.getCreatedAt())
                 .expiresAt(urlMapping.getExpiresAt())
                 .originalUrl(urlMapping.getOriginalUrl())

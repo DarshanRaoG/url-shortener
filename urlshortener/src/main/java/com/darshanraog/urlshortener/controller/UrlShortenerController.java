@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 @AllArgsConstructor
@@ -33,14 +32,16 @@ public class UrlShortenerController {
         if (Objects.isNull(shortCode)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        UrlMapping urlMapping = urlShortenerService
-                .getOriginalUrlMapping(shortCode);
-        if (Objects.isNull(urlMapping.getExpiresAt()) || urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+        try {
+            UrlMapping urlMapping = urlShortenerService.getOriginalUrlMapping(shortCode);
+
+            return ResponseEntity.status(302)
+                    .location(URI.create(urlMapping.getOriginalUrl()))
+                    .build();
+
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.GONE).build();
         }
-        String originalUrl = urlMapping
-                .getOriginalUrl();
-        return ResponseEntity.status(302).location(URI.create(originalUrl)).build();
     }
 
     @GetMapping("/stats/{shortCode}")
@@ -48,6 +49,10 @@ public class UrlShortenerController {
         if (Objects.isNull(shortCode)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        return ResponseEntity.ok(urlShortenerService.getStats(shortCode));
+        try {
+            return ResponseEntity.ok(urlShortenerService.getStats(shortCode));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.GONE).build();
+        }
     }
 }
