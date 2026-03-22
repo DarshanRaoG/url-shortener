@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    container_name: urlshortener-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/url_shortener?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      URL_SHORTENER_SECRET: ${URL_SHORTENER_SECRET}
+
+  mysql:
+    image: mysql:8
+    container_name: urlshortener-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: url_shortener
+    ports:
+      - "3307:3306"
+
+  redis:
+    image: redis:7
+    container_name: urlshortener-redis
+    ports:
+      - "6379:6379"
