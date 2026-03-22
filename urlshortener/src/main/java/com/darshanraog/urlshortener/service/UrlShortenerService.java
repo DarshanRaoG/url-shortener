@@ -6,6 +6,7 @@ import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
 import com.darshanraog.urlshortener.util.Base62Encoder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class UrlShortenerService implements IUrlShortenerService {
     private final StringRedisTemplate redisTemplate;
     private static final long PRIME = 2654435761L;
     private static final String CLICKS_KEY = "clicks:";
+    private static final String RATES_KEY = "redirect_rate:";
 
     /**
      * Creates a shortened URL for the given URL, saves it in DB and then returns it.
@@ -69,6 +71,7 @@ public class UrlShortenerService implements IUrlShortenerService {
 
         UrlMapping urlMapping;
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         // Check if there is a cached URL in Redis
         String cachedJson = redisTemplate.opsForValue().get(shortCode);
 
@@ -143,6 +146,16 @@ public class UrlShortenerService implements IUrlShortenerService {
                 .originalUrl(urlMapping.getOriginalUrl())
                 .shortCode(urlMapping.getShortCode())
                 .build();
+    }
+
+    @Override
+    public boolean isRequestRateBelowLimit(String ipAddress) {
+        String key = RATES_KEY + ipAddress;
+        Long count = redisTemplate.opsForValue().increment(key);
+        if (count == 1) {
+            redisTemplate.expire(key, Duration.ofSeconds(60));
+        }
+        return count <= 100;
     }
 
     @Override

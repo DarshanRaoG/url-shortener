@@ -9,4 +9,5 @@ public class UrlShortenerProperties {
     private Long secret;
     private String baseUrl;
     private Long defaultExpiryDays;
+    private Long defaultRateLimit;
 }
