@@ -6,6 +6,7 @@ import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.repository.UrlMappingRepository;
 import com.darshanraog.urlshortener.util.Base62Encoder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -69,6 +70,7 @@ public class UrlShortenerService implements IUrlShortenerService {
 
         UrlMapping urlMapping;
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         // Check if there is a cached URL in Redis
         String cachedJson = redisTemplate.opsForValue().get(shortCode);
 
