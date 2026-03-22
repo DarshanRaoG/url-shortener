@@ -31,6 +31,8 @@ public interface IUrlShortenerService {
      */
     UrlMappingDTO getStats(String shortCode);
 
+    boolean isRequestRateBelowLimit(String ipAddress);
+
     //TODO: Might add this functionality
     LocalDateTime checkExpiryDate();
 }

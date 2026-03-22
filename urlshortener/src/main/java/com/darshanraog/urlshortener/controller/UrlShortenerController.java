@@ -4,13 +4,13 @@ package com.darshanraog.urlshortener.controller;
 import com.darshanraog.urlshortener.dto.UrlMappingDTO;
 import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.service.IUrlShortenerService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 @AllArgsConstructor
@@ -29,18 +29,30 @@ public class UrlShortenerController {
     }
 
     @GetMapping("/{shortCode}")
-    ResponseEntity<Void> redirectUrl(@PathVariable String shortCode) {
+    ResponseEntity<Void> redirectUrl(@PathVariable String shortCode, HttpServletRequest request) {
         if (Objects.isNull(shortCode)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        UrlMapping urlMapping = urlShortenerService
-                .getOriginalUrlMapping(shortCode);
-        if (Objects.isNull(urlMapping.getExpiresAt()) || urlMapping.getExpiresAt().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.status(HttpStatus.GONE).build();
+        try {
+            String ipAddress = request.getRemoteAddr();
+
+            // Make sure there aren't too many requests at a time from the same IP
+            if (!urlShortenerService.isRequestRateBelowLimit(ipAddress)) {
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+            }
+
+            UrlMapping urlMapping = urlShortenerService.getOriginalUrlMapping(shortCode);
+
+            return ResponseEntity.status(302)
+                    .location(URI.create(urlMapping.getOriginalUrl()))
+                    .build();
+
+        } catch (RuntimeException e) {
+            if ("URL expired!".equals(e.getMessage())) {
+                return ResponseEntity.status(HttpStatus.GONE).build();
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        String originalUrl = urlMapping
-                .getOriginalUrl();
-        return ResponseEntity.status(302).location(URI.create(originalUrl)).build();
     }
 
     @GetMapping("/stats/{shortCode}")
@@ -48,6 +60,10 @@ public class UrlShortenerController {
         if (Objects.isNull(shortCode)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        return ResponseEntity.ok(urlShortenerService.getStats(shortCode));
+        try {
+            return ResponseEntity.ok(urlShortenerService.getStats(shortCode));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.GONE).build();
+        }
     }
 }
