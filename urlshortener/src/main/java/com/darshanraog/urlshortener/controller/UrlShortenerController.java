@@ -4,6 +4,7 @@ package com.darshanraog.urlshortener.controller;
 import com.darshanraog.urlshortener.dto.UrlMappingDTO;
 import com.darshanraog.urlshortener.entity.UrlMapping;
 import com.darshanraog.urlshortener.service.IUrlShortenerService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,11 +29,18 @@ public class UrlShortenerController {
     }
 
     @GetMapping("/{shortCode}")
-    ResponseEntity<Void> redirectUrl(@PathVariable String shortCode) {
+    ResponseEntity<Void> redirectUrl(@PathVariable String shortCode, HttpServletRequest request) {
         if (Objects.isNull(shortCode)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         try {
+            String ipAddress = request.getRemoteAddr();
+
+            // Make sure there aren't too many requests at a time from the same IP
+            if (!urlShortenerService.isRequestRateBelowLimit(ipAddress)) {
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+            }
+
             UrlMapping urlMapping = urlShortenerService.getOriginalUrlMapping(shortCode);
 
             return ResponseEntity.status(302)
@@ -40,7 +48,10 @@ public class UrlShortenerController {
                     .build();
 
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.GONE).build();
+            if ("URL expired!".equals(e.getMessage())) {
+                return ResponseEntity.status(HttpStatus.GONE).build();
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
