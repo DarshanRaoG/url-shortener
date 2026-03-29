@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
 export class Home {
   inputUrl = model<string>('');
   shortUrl = signal<string | null>(null);
-
+  loading = signal(false);
   http = inject(HttpClient);
 
   handleShortenClick() {
@@ -20,9 +20,18 @@ export class Home {
     if (!url) return;
 
     this.shortUrl.set(null); // clearing old result
+    this.loading.set(true);
 
-    this.http.post(`/api/shorten?url=${url}`, {}, { responseType: 'text' }).subscribe((result) => {
-      this.shortUrl.set(result);
+    this.http.post(`/api/shorten?url=${url}`, {}, { responseType: 'text' }).subscribe({
+      next: (result) => {
+        this.shortUrl.set(result);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.log(err);
+        alert('Error while shortening URL! ');
+        this.loading.set(false);
+      },
     });
   }
 
