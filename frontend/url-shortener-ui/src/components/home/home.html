@@ -1,0 +1,13 @@
+<div class="home-div">
+  <div class="url-input-div">
+    <input type="text" [(ngModel)]="inputUrl" />
+    <button (click)="handleShortenClick()" [disabled]="!inputUrl()">Shorten</button>
+  </div>
+
+  @if (shortUrl()) {
+    <div class="url-input-div">
+      <input type="text" readonly [value]="shortUrl()" />
+      <button (click)="handleCopyClick()">Copy</button>
+    </div>
+  }
+</div>
