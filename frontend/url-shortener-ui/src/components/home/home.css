@@ -1,0 +1,12 @@
+.home-div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  justify-self: center;
+}
+
+.url-input-div {
+  display: flex;
+  justify-content: center;
+}
