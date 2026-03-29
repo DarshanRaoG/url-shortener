@@ -1,8 +1,12 @@
 <div class="home-div">
   <div class="url-input-div">
     <input type="text" [(ngModel)]="inputUrl" />
-    <button (click)="handleShortenClick()" [disabled]="!inputUrl()">Shorten</button>
+    <button (click)="handleShortenClick()" [disabled]="!inputUrl() || loading()">Shorten</button>
   </div>
+
+  @if (loading()) {
+    <p>Loading shortened URL...</p>
+  }
 
   @if (shortUrl()) {
     <div class="url-input-div">
