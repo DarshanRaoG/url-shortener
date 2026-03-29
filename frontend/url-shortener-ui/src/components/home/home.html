@@ -7,7 +7,7 @@
   @if (shortUrl()) {
     <div class="url-input-div">
       <input type="text" readonly [value]="shortUrl()" />
-      <input type="button" value="Copy" />
+      <button (click)="handleCopyClick()">Copy</button>
     </div>
   }
 </div>
