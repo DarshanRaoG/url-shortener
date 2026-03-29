@@ -1,4 +1,5 @@
 <div class="home-div">
+  <h1>URL Shortener</h1>
   <div class="url-input-div">
     <input type="text" [(ngModel)]="inputUrl" />
     <button (click)="handleShortenClick()" [disabled]="!inputUrl() || loading()">Shorten</button>
@@ -11,7 +12,7 @@
   @if (shortUrl()) {
     <div class="url-input-div">
       <input type="text" readonly [value]="shortUrl()" />
-      <button (click)="handleCopyClick()">Copy</button>
+      <button (click)="handleCopyClick()" class="copy-button">Copy</button>
     </div>
   }
 </div>

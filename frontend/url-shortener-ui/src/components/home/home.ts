@@ -28,7 +28,8 @@ export class Home {
         this.loading.set(false);
       },
       error: (err) => {
-        alert('Error while shortening url! ' + err);
+        console.log(err);
+        alert('Error while shortening URL! ');
         this.loading.set(false);
       },
     });

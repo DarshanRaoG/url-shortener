@@ -1,9 +1,34 @@
-import { Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Component, inject, input, model, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-stats',
-  imports: [],
+  imports: [FormsModule],
   templateUrl: './stats.html',
   styleUrl: './stats.css',
 })
-export class Stats {}
+export class Stats {
+  http = inject(HttpClient);
+  shortUrl = model('');
+  loading = signal(false);
+  stats = signal<any | null>(null);
+
+  handleStatsClick() {
+    const code = this.shortUrl().split('/').pop();
+
+    this.loading.set(true);
+
+    this.http.get(`/api/stats/${code}`).subscribe({
+      next: (result) => {
+        this.stats.set(result);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.log(err);
+        alert('Error fetching statistics for this URL! ');
+        this.loading.set(false);
+      },
+    });
+  }
+}
