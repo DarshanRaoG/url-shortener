@@ -14,6 +14,11 @@ export class Stats {
   loading = signal(false);
   stats = signal<any | null>(null);
 
+  originalURL = signal('');
+  clicks = signal('');
+  createdAt = signal(new Date());
+  expiresAt = signal(new Date());
+
   handleStatsClick() {
     const code = this.shortUrl().split('/').pop();
 
@@ -22,6 +27,12 @@ export class Stats {
     this.http.get(`/api/stats/${code}`).subscribe({
       next: (result) => {
         this.stats.set(result);
+
+        this.originalURL.set(this.stats().originalUrl);
+        this.clicks.set(this.stats().clickCount);
+        this.createdAt.set(new Date(this.stats().createdAt));
+        this.expiresAt.set(new Date(this.stats().expiresAt));
+
         this.loading.set(false);
       },
       error: (err) => {

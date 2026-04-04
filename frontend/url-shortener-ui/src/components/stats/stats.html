@@ -1,28 +1,39 @@
 <div class="stats-div">
-  <div class="stats-input-div">
-    <input type="text" [(ngModel)]="shortUrl" />
-    <button (click)="handleStatsClick()" [disabled]="!shortUrl() || loading()">Get Stats</button>
-  </div>
-  <div class="stats-output-div">
-    @if (stats()) {
-      <table>
-        <tr>
-          <td>Original URL</td>
-          <td>{{ stats()?.originalUrl }}</td>
-        </tr>
-        <tr>
-          <td>Clicks</td>
-          <td>{{ stats()?.clickCount }}</td>
-        </tr>
-        <tr>
-          <td>Created At</td>
-          <td>{{ stats()?.createdAt }}</td>
-        </tr>
-        <tr>
-          <td>Expires At</td>
-          <td>{{ stats()?.expiresAt }}</td>
-        </tr>
-      </table>
-    }
+  <h1>Inspect your shortened URL here!</h1>
+  <div class="card">
+    <div class="stats-input-div">
+      <input type="text" [(ngModel)]="shortUrl" />
+      <button (click)="handleStatsClick()" [disabled]="!shortUrl() || loading()">Analyze</button>
+    </div>
+    <div class="stats-output-div">
+      @if (stats()) {
+        <table>
+          <thead>
+            <tr>
+              <td>Metrics</td>
+              <td>Values</td>
+            </tr>
+          </thead>
+          <tr>
+            <td>Original URL</td>
+            <td>
+              <a [href]="originalURL()" target="_blank">{{ originalURL() }}</a>
+            </td>
+          </tr>
+          <tr>
+            <td>Clicks</td>
+            <td>{{ clicks() }}</td>
+          </tr>
+          <tr>
+            <td>Created At</td>
+            <td>{{ createdAt().toUTCString() }}</td>
+          </tr>
+          <tr>
+            <td>Expires At</td>
+            <td>{{ expiresAt().toUTCString() }}</td>
+          </tr>
+        </table>
+      }
+    </div>
   </div>
 </div>
