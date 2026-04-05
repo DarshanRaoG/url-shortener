@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, model, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UrlService } from '../../services/url-service';
+import { NotificationService } from '../../services/notification-service';
 
 @Component({
   selector: 'app-home',
@@ -15,6 +16,7 @@ export class Home {
   loading = signal(false);
 
   urlService = inject(UrlService);
+  notificationService = inject(NotificationService);
 
   handleShortenClick() {
     const url = this.inputUrl();
@@ -30,7 +32,7 @@ export class Home {
       },
       error: (err) => {
         console.log(err);
-        alert('Error while shortening URL! ');
+        this.notificationService.showError('Error while shortening URL! ');
         this.loading.set(false);
       },
     });
@@ -42,7 +44,7 @@ export class Home {
 
     navigator.clipboard
       .writeText(url)
-      .then(() => alert('Copied!'))
-      .catch(() => alert('Error while copying url!'));
+      .then(() => this.notificationService.showSuccess('Copied!'))
+      .catch(() => this.notificationService.showError('Error while copying url!'));
   }
 }

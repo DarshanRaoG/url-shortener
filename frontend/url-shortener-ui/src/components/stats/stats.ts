@@ -3,6 +3,7 @@ import { Component, inject, input, model, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UrlService } from '../../services/url-service';
 import { UrlStats } from '../../models/url-stats.model';
+import { NotificationService } from '../../services/notification-service';
 
 @Component({
   selector: 'app-stats',
@@ -12,6 +13,7 @@ import { UrlStats } from '../../models/url-stats.model';
 })
 export class Stats {
   urlService = inject(UrlService);
+  notificationService = inject(NotificationService);
   shortUrl = model('');
   loading = signal(false);
   stats = signal<UrlStats | null>(null);
@@ -36,7 +38,7 @@ export class Stats {
       },
       error: (err) => {
         console.log(err);
-        alert('Error fetching statistics for this URL! ');
+        this.notificationService.showError('Error fetching statistics for this URL! ');
         this.loading.set(false);
       },
     });
