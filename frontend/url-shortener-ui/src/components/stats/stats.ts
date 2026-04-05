@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, input, model, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { UrlService } from '../../services/url-service';
+import { UrlStats } from '../../models/url-stats.model';
 
 @Component({
   selector: 'app-stats',
@@ -9,29 +11,26 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './stats.css',
 })
 export class Stats {
-  http = inject(HttpClient);
+  urlService = inject(UrlService);
   shortUrl = model('');
   loading = signal(false);
-  stats = signal<any | null>(null);
+  stats = signal<UrlStats | null>(null);
 
-  originalURL = signal('');
-  clicks = signal('');
-  createdAt = signal(new Date());
-  expiresAt = signal(new Date());
+  createdDateString = '';
+  expiryDateString = '';
 
   handleStatsClick() {
     const code = this.shortUrl().split('/').pop();
+    if (!code) return;
 
     this.loading.set(true);
 
-    this.http.get(`/api/stats/${code}`).subscribe({
-      next: (result) => {
+    this.urlService.getStats(code).subscribe({
+      next: (result: UrlStats) => {
         this.stats.set(result);
 
-        this.originalURL.set(this.stats().originalUrl);
-        this.clicks.set(this.stats().clickCount);
-        this.createdAt.set(new Date(this.stats().createdAt));
-        this.expiresAt.set(new Date(this.stats().expiresAt));
+        this.createdDateString = new Date(this.stats()!.createdAt).toUTCString();
+        this.expiryDateString = new Date(this.stats()!.expiresAt).toUTCString();
 
         this.loading.set(false);
       },

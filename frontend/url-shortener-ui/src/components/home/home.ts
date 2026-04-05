@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, model, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { UrlService } from '../../services/url-service';
 
 @Component({
   selector: 'app-home',
@@ -13,7 +13,8 @@ export class Home {
   inputUrl = model<string>('');
   shortUrl = signal<string | null>(null);
   loading = signal(false);
-  http = inject(HttpClient);
+
+  urlService = inject(UrlService);
 
   handleShortenClick() {
     const url = this.inputUrl();
@@ -22,7 +23,7 @@ export class Home {
     this.shortUrl.set(null); // clearing old result
     this.loading.set(true);
 
-    this.http.post(`/api/shorten?url=${url}`, {}, { responseType: 'text' }).subscribe({
+    this.urlService.shortenUrl(url).subscribe({
       next: (result) => {
         this.shortUrl.set(result);
         this.loading.set(false);
