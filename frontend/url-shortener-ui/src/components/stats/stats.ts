@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, input, model, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { UrlService } from '../../services/url-service';
 
 @Component({
   selector: 'app-stats',
@@ -9,7 +10,7 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './stats.css',
 })
 export class Stats {
-  http = inject(HttpClient);
+  urlService = inject(UrlService);
   shortUrl = model('');
   loading = signal(false);
   stats = signal<any | null>(null);
@@ -25,7 +26,7 @@ export class Stats {
 
     this.loading.set(true);
 
-    this.http.get(`/api/stats/${code}`).subscribe({
+    this.urlService.getStats(code).subscribe({
       next: (result) => {
         this.stats.set(result);
 
