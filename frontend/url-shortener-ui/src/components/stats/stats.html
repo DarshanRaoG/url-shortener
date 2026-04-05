@@ -20,20 +20,20 @@
           <tr>
             <td>Original URL</td>
             <td>
-              <a [href]="originalURL()" target="_blank">{{ originalURL() }}</a>
+              <a [href]="stats()?.originalUrl" target="_blank">{{ stats()?.originalUrl }}</a>
             </td>
           </tr>
           <tr>
             <td>Clicks</td>
-            <td>{{ clicks() }}</td>
+            <td>{{ stats()?.clickCount }}</td>
           </tr>
           <tr>
             <td>Created At</td>
-            <td>{{ createdAt().toUTCString() }}</td>
+            <td>{{ createdDateString }}</td>
           </tr>
           <tr>
             <td>Expires At</td>
-            <td>{{ expiresAt().toUTCString() }}</td>
+            <td>{{ expiryDateString }}</td>
           </tr>
         </table>
       </div>
