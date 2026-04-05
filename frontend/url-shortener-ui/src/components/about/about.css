@@ -1,0 +1,45 @@
+.about-div {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+  font-family: Arial, sans-serif;
+}
+
+.about-div h1 {
+  margin-bottom: 15px;
+  color: var(--primary);
+}
+
+.about-div h2 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: var(--primary);
+}
+
+.about-div p {
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.about-div ul {
+  padding-left: 20px;
+}
+
+.about-div li {
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

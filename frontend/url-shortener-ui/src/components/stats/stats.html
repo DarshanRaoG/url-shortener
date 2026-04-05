@@ -2,11 +2,14 @@
   <h1>Inspect your shortened URL here!</h1>
   <div class="card">
     <div class="stats-input-div">
-      <input type="text" [(ngModel)]="shortUrl" />
+      <input type="text" [(ngModel)]="shortUrl" (keyup.enter)="handleStatsClick()" />
       <button (click)="handleStatsClick()" [disabled]="!shortUrl() || loading()">Analyze</button>
     </div>
-    <div class="stats-output-div">
-      @if (stats()) {
+    @if (loading()) {
+      <p>Loading metrics for shortened URL...</p>
+    }
+    @if (stats()) {
+      <div class="stats-output-div">
         <table>
           <thead>
             <tr>
@@ -33,7 +36,7 @@
             <td>{{ expiresAt().toUTCString() }}</td>
           </tr>
         </table>
-      }
-    </div>
+      </div>
+    }
   </div>
 </div>

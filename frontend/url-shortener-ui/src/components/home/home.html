@@ -2,7 +2,12 @@
   <h1>Shorten your link!</h1>
   <div class="card">
     <div class="url-input-div">
-      <input type="text" [(ngModel)]="inputUrl" placeholder="example: https://www.google.com" />
+      <input
+        type="text"
+        [(ngModel)]="inputUrl"
+        placeholder="example: https://www.google.com"
+        (keyup.enter)="handleShortenClick()"
+      />
       <button (click)="handleShortenClick()" [disabled]="!inputUrl() || loading()">Go</button>
     </div>
 

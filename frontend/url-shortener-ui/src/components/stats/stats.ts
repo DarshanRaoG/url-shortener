@@ -21,6 +21,7 @@ export class Stats {
 
   handleStatsClick() {
     const code = this.shortUrl().split('/').pop();
+    if (!code) return;
 
     this.loading.set(true);
 
