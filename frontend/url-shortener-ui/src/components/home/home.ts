@@ -19,10 +19,17 @@ export class Home {
   notificationService = inject(NotificationService);
 
   handleShortenClick() {
-    const url = this.inputUrl();
-    if (!url) return;
+    const rawUrl = this.inputUrl();
+    if (!rawUrl) return;
 
-    this.shortUrl.set(null); // clearing old result
+    const url = this.normalizeUrl(rawUrl);
+
+    if (!url) {
+      this.notificationService.showError('Please enter a valid URL!');
+      return;
+    }
+
+    this.shortUrl.set(null);
     this.loading.set(true);
 
     this.urlService.shortenUrl(url).subscribe({
@@ -32,7 +39,7 @@ export class Home {
       },
       error: (err) => {
         console.log(err);
-        this.notificationService.showError('Error while shortening URL! ');
+        this.notificationService.showError('Error while shortening URL!');
         this.loading.set(false);
       },
     });
@@ -46,5 +53,22 @@ export class Home {
       .writeText(url)
       .then(() => this.notificationService.showSuccess('Copied!'))
       .catch(() => this.notificationService.showError('Error while copying url!'));
+  }
+
+  private normalizeUrl(url: string): string | null {
+    let finalUrl = url.trim();
+
+    // Add https:// if missing
+    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+      finalUrl = 'https://' + finalUrl;
+    }
+
+    // Validate URL
+    try {
+      new URL(finalUrl);
+      return finalUrl;
+    } catch {
+      return null;
+    }
   }
 }
