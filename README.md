@@ -10,6 +10,8 @@ When someone opens the short link, they are quickly redirected to the original s
 The system is built to be fast and handle lots of users at the same time.<br>
 It also keeps track of how many people clicked the link and prevents misuse by limiting too many requests.
 
+![Demo](https://github.com/DarshanRaoG/url-shortener/blob/main/URL%20Shortener.gif)
+
 ---
 
 ## ⭐Highlights
