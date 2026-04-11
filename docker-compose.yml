@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    build: ./urlshortener
     container_name: urlshortener-app
     ports:
       - "8080:8080"
@@ -32,6 +32,14 @@ services:
     container_name: urlshortener-redis
     ports:
       - "6379:6379"
+
+  ui:
+    build: ./frontend/url-shortener-ui
+    container_name: urlshortener-ui
+    ports:
+      - "4200:80"
+    depends_on:
+      - app
 
 volumes:
   mysql_data:
