@@ -1,0 +1,25 @@
+<div class="home-div">
+  <h1>Shorten your link!</h1>
+  <div class="card">
+    <div class="url-input-div">
+      <input
+        type="text"
+        [(ngModel)]="inputUrl"
+        placeholder="example: https://www.google.com"
+        (keyup.enter)="handleShortenClick()"
+      />
+      <button (click)="handleShortenClick()" [disabled]="!inputUrl() || loading()">Go</button>
+    </div>
+
+    @if (loading()) {
+      <p>Loading shortened URL...</p>
+    }
+
+    @if (shortUrl()) {
+      <div class="url-input-div">
+        <input type="text" readonly [value]="shortUrl()" />
+        <button (click)="handleCopyClick()" class="copy-button">Copy</button>
+      </div>
+    }
+  </div>
+</div>

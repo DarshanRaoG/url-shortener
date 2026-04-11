@@ -1,0 +1,7 @@
+<div class="toast-container">
+  @for (n of notifications(); track n.id) {
+    <div class="toast" [class]="n.type">
+      {{ n.message }}
+    </div>
+  }
+</div>

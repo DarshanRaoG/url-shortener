@@ -1,0 +1,38 @@
+:root {
+  --primary: #031f39;
+  --accent: #ff6900;
+
+  --bg-main: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-muted: #f9fafb;
+
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-inverse: #ffffff;
+
+  --border-light: #e5e7eb;
+  --border-focus: #ff6900;
+
+  --success: #16a34a;
+  --error: #dc2626;
+  --warning: #f59e0b;
+  --info: #2563eb;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: Arial, sans-serif;
+}
+
+input {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+
+input[type='text']:focus {
+  outline: none;
+  border: 2px solid var(--border-focus) !important;
+}
