@@ -2,44 +2,59 @@ services:
   app:
     build: ./urlshortener
     container_name: urlshortener-app
-    ports:
-      - "8080:8080"
+    restart: unless-stopped
     depends_on:
-      - mysql
-      - redis
+      mysql:
+        condition: service_started
+      redis:
+        condition: service_started
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/url_shortener?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/url_shortener?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
-      URL_SHORTENER_SECRET: ${URL_SHORTENER_SECRET}
+      URL_SHORTENER_SECRET: ${URL_SHORTENER_SECRET:?URL_SHORTENER_SECRET must be set}
+      URL_SHORTENER_BASE_URL: https://shorten-links.duckdns.org/api
 
   mysql:
     image: mysql:8
     container_name: urlshortener-mysql
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
       MYSQL_DATABASE: url_shortener
-    ports:
-      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
 
   redis:
     image: redis:7
     container_name: urlshortener-redis
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
 
   ui:
     build: ./frontend/url-shortener-ui
     container_name: urlshortener-ui
-    ports:
-      - "4200:80"
+    restart: unless-stopped
     depends_on:
       - app
 
+  caddy:
+    image: caddy:2
+    container_name: urlshortener-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - ui
+
 volumes:
   mysql_data:
+  caddy_data:
+  caddy_config:
